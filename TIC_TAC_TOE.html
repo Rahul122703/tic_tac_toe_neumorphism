@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #e0e5ec;
+        }
+        .board {
+            margin: 0 20px;
+            display: grid;
+            grid-template-columns: repeat(3, 120px);
+            grid-template-rows: repeat(3, 120px);
+            gap: 10px;
+            padding: 10px;
+            border-radius: 20px;
+            background-color: #d1d9e6;
+            box-shadow: 20px 20px 60px #b0b8c9, -20px -20px 60px #f0f7ff;
+        }
+        .cell {
+            width: 120px;
+            height: 120px;
+            border: 1px solid #b0b8c9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            cursor: pointer;
+            background-color: #d1d9e6;
+            border-radius: 10px;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        .cell:hover {
+            background-color: #c1c9d6;
+        }
+        .cell.used {
+            background-color: #a7b0bf;
+            box-shadow: inset 5px 5px 10px #b0b8c9, inset -5px -5px 10px #f0f7ff;
+        }
+        .restart-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 10px;
+            background-color: #d1d9e6;
+            box-shadow: 10px 10px 30px #b0b8c9, -10px -10px 30px #f0f7ff;
+            cursor: pointer;
+            transition: box-shadow 0.3s, transform 0.3s;
+        }
+        .restart-button:hover {
+            box-shadow: 5px 5px 15px #b0b8c9, -5px -5px 15px #f0f7ff;
+        }
+        .restart-button:active {
+            transform: translateY(2px);
+            box-shadow: 2px 2px 10px #b0b8c9, -2px -2px 10px #f0f7ff;
+        }
+    </style>
+  </head>
+  <body>
+    <div>
+      <input type="radio" id="singlePlayer" name="playerMode" value="single">
+      <label for="singlePlayer">Single Player</label>
+      <input type="radio" id="doublePlayer" name="playerMode" value="double"
+        checked>
+      <label for="doublePlayer">Double Player</label>
+    </div>
+    <div class="board"></div>
+    <button class="restart-button" onclick="handleRestartGame()">Restart
+      Game</button>
+    <script>
+        const board = document.querySelector('.board');
+        let currentPlayer = 'X';
+        let gameActive = true;
+        let gameState = ['', '', '', '', '', '', '', '', ''];
+        const winningConditions = [
+            [0, 1, 2],
+            [3, 4, 5],
+            [6, 7, 8],
+            [0, 3, 6],
+            [1, 4, 7],
+            [2, 5, 8],
+            [0, 4, 8],
+            [2, 4, 6]
+        ];
+        let playerMode = 'double'; // Default mode is double player
+
+        function handlePlayerModeChange(event) {
+            playerMode = event.target.value;
+            handleRestartGame();
+        }
+
+        document.querySelectorAll('input[name="playerMode"]').forEach(radio => {
+            radio.addEventListener('change', handlePlayerModeChange);
+        });
+
+        function handleCellClick(event) {
+            const clickedCell = event.target;
+            const cellIndex = parseInt(clickedCell.getAttribute('data-cell-index'));
+
+            if (gameState[cellIndex] !== '' || !gameActive) {
+                return;
+            }
+
+            handleCellPlayed(clickedCell, cellIndex);
+            handleResultValidation();
+
+            if (playerMode === 'single' && gameActive && currentPlayer === 'O') {
+                setTimeout(makeComputerMove, 500);
+            }
+        }
+
+        function handleCellPlayed(clickedCell, cellIndex) {
+            gameState[cellIndex] = currentPlayer;
+            clickedCell.textContent = currentPlayer;
+            clickedCell.classList.add('used');
+        }
+
+        function handleResultValidation() {
+            let roundWon = false;
+            for (let i = 0; i < winningConditions.length; i++) {
+                const winCondition = winningConditions[i];
+                let a = gameState[winCondition[0]];
+                let b = gameState[winCondition[1]];
+                let c = gameState[winCondition[2]];
+                if (a === '' || b === '' || c === '') {
+                    continue;
+                }
+                if (a === b && b === c) {
+                    roundWon = true;
+                    break;
+                }
+            }
+
+            if (roundWon) {
+                setTimeout(() => alert(`Player ${currentPlayer} has won!`), 100);
+                gameActive = false;
+                return;
+            }
+
+            const roundDraw = !gameState.includes('');
+            if (roundDraw) {
+                setTimeout(() => alert('The game is a draw!'), 100);
+                gameActive = false;
+                return;
+            }
+
+            // Switch player for double-player mode or switch back to X after the computer's move
+            if (playerMode === 'double' || currentPlayer === 'X') {
+                handlePlayerChange();
+            }
+        }
+
+        function handlePlayerChange() {
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        }
+
+        function handleRestartGame() {
+            gameActive = true;
+            currentPlayer = 'X';
+            gameState = ['', '', '', '', '', '', '', '', ''];
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.textContent = '';
+                cell.classList.remove('used');
+            });
+        }
+
+        function createBoard() {
+            board.innerHTML = ''; // Clear the board before re-creating
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.setAttribute('data-cell-index', i);
+                cell.addEventListener('click', handleCellClick);
+                board.appendChild(cell);
+            }
+        }
+
+        function makeComputerMove() {
+            if (gameActive) {
+                let emptyCells = [];
+                for (let i = 0; i < gameState.length; i++) {
+                    if (gameState[i] === '') {
+                        emptyCells.push(i);
+                    }
+                }
+                if (emptyCells.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * emptyCells.length);
+                    const cellIndex = emptyCells[randomIndex];
+                    const cell = document.querySelector(`[data-cell-index="${cellIndex}"]`);
+                    handleCellPlayed(cell, cellIndex);
+                    handleResultValidation();
+
+                    // Switch back to X after the computer's move in single-player mode
+                    if (playerMode === 'single') {
+                        handlePlayerChange();
+                    }
+                }
+            }
+        }
+
+        createBoard();
+    </script>
+  </body>
+</html>
